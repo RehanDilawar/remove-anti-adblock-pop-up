@@ -16,6 +16,12 @@ An aggressive, lightweight userscript designed to bypass and completely eliminat
 
 ---
 
+> [!WARNING]
+> **Adblocker Notice for Intercelestial (`intercelestial.com`):**  
+> Disable your extension ad blocker (e.g., uBlock Origin, AdGuard) specifically on **`intercelestial.com`**[cite: 1, 2]. Intercelestial uses server-side verification that detects blocked network requests and third-party ad blocking, resulting in an *"Ad blocker or auto-click script detected"* roadblock[cite: 1]. Whitelist the site in your ad blocker so the token handshake can complete[cite: 1].
+
+---
+
 ## ✨ Features
 
 - 🛑 **Aggressive DOM Removal:** Continuously scans and removes anti-adblock overlays and root wrapper nodes.
@@ -49,7 +55,7 @@ This project is licensed under the **[MIT License](LICENSE)** — feel free to c
 
 ## 🛠️ Author & Support
 * Developed and maintained by [Rehan Dilawar](https://github.com/rehandilawar).
-* Found an issue or a broken selector? Open an issue on [GitHub](https://github.com/rehandilawar).
+* Found an issue or a broken selector? Open an issue on [GitHub](https://github.com/RehanDilawar/remove-anti-adblock-pop-up).
 
 ---
 
