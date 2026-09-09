@@ -1,6 +1,6 @@
 # 🛡️ Remove Anti-Adblock Popup - Advanced
 
-[![Greasy Fork](https://img.shields.io/badge/Greasy%20Fork-Install%20Script-red?style=for-the-badge&logo=greasyfork)](https://update.greasyfork.org/scripts/592517/Remove%20Anti-Adblock%20Popup%20-%20Advanced.user.js)
+[![Greasy Fork](https://img.shields.io/badge/Greasy%20Fork-Install%20Script-red?style=for-the-badge&logo=greasyfork)](https://greasyfork.org/en/scripts/592517-remove-anti-adblock-popup-advanced)
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-Supported-green?style=for-the-badge&logo=tampermonkey)](https://www.tampermonkey.net/)
 [![Violentmonkey](https://img.shields.io/badge/Violentmonkey-Supported-orange?style=for-the-badge)](https://violentmonkey.github.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
@@ -34,7 +34,7 @@ Ensure you have an active userscript manager extension installed in your browser
 
 ### Step 2: Install the Script
 Click the link below and confirm the installation in your manager:  
-👉 **[Install from Greasy Fork](https://update.greasyfork.org/scripts/592517/Remove%20Anti-Adblock%20Popup%20-%20Advanced.user.js)**
+👉 **[Install from Greasy Fork](https://greasyfork.org/en/scripts/592517-remove-anti-adblock-popup-advanced)**
 
 ### Step 3: Enjoy
 Navigate to **pahe.ink** with your adblocker active. Popups, background dimmers, and scroll blocks will be silenced automatically.
