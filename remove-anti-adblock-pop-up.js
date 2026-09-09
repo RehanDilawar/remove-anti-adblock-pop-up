@@ -1,11 +1,10 @@
 // ==UserScript==
 // @name         Remove Anti-Adblock Popup - Advanced
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Aggressively remove anti-adblock popups with CSS injection on pahe.ink
+// @version      2.2
+// @license MIT
+// @description  Neutrally hides AntiAdBlock Core popups and restores scroll without triggering anti-tamper detection.
 // @author       rehandilawar
-// @homepageURL  https://github.com/rehandilawar
-// @supportURL   https://github.com/rehandilawar
 // @match        *://pahe.ink/*
 // @match        *://*.pahe.ink/*
 // @match        https://teknoasian.com/*
@@ -55,198 +54,126 @@
 // @match        https://autoshieldd.com/*
 // @match        https://selfhostt.com/*
 // @match        https://ssdhostting.com/*
-// @icon         https://raw.githubusercontent.com/RehanDilawar/remove-anti-adblock-pop-up/refs/heads/main/favicon.ico
 // @grant        GM_addStyle
 // @run-at       document-start
 // ==/UserScript==
 
-(function() {
+(function () {
   'use strict';
 
-  const styles = `
-    #n32dbfd7a,
-    #n32dbfd7a * {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    html, body {
+      overflow: auto !important;
+      position: static !important;
     }
-
-    [data-cdf4246a7-card],
-    [data-cdf4246a7-card] * {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
+    /* Visually collapse known AAB containers without removing them from DOM */
+    div[class*="antiadblock"],
+    div[id*="antiadblock"],
     .give-freely-root {
       display: none !important;
-      visibility: hidden !important;
       opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
-    #give-freely-root-kkkbiiikppgjdiebcabomlbidfodipjg {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
-    [data-cdf4246a7-style] {
-      display: none !important;
-    }
-
-    body {
-      overflow: auto !important;
-    }
-
-    html {
-      overflow: auto !important;
-    }
-
-    [style*="z-index: 2147483647"],
-    [style*="position: fixed"][style*="inset: 0px"] {
-      display: none !important;
       pointer-events: none !important;
     }
   `;
+  (document.head || document.documentElement).appendChild(styleEl);
 
-  function injectStyles() {
-    const style = document.createElement('style');
-    style.type = 'text/css';
-    style.id = 'adblock-popup-killer';
-    style.textContent = styles;
-    
-    if (document.head) {
-      document.head.appendChild(style);
-    } else {
-      document.documentElement.appendChild(style);
+  function unlockScroll() {
+    if (document.body) document.body.style.setProperty('overflow', 'auto', 'important');
+    if (document.documentElement) document.documentElement.style.setProperty('overflow', 'auto', 'important');
+  }
+
+  function hideElement(el) {
+    if (!el || !el.style) return;
+    el.style.setProperty('display', 'none', 'important');
+    el.style.setProperty('visibility', 'hidden', 'important');
+    el.style.setProperty('pointer-events', 'none', 'important');
+    el.style.setProperty('opacity', '0', 'important');
+    unlockScroll();
+  }
+
+  function isAABHost(el) {
+    if (!el || !el.attributes) return false;
+    for (let i = 0; i < el.attributes.length; i++) {
+      if (/^data-[a-z0-9]{6,12}-(h|card|style)$/i.test(el.attributes[i].name)) return true;
+    }
+    return false;
+  }
+
+  const nativeToString = Function.prototype.toString;
+  const originalAttachShadow = Element.prototype.attachShadow;
+
+  Element.prototype.attachShadow = function (...args) {
+    const shadowRoot = originalAttachShadow.apply(this, args);
+    const host = this;
+
+    const inspectAndHide = () => {
+      try {
+        const content = shadowRoot.innerHTML || '';
+        if (
+          content.includes('antiadblockcore') ||
+          content.includes('Adblocker detected') ||
+          content.includes('disable your adblocker') ||
+          shadowRoot.querySelector('a[href*="antiadblockcore"]')
+        ) {
+          hideElement(host);
+        }
+      } catch (e) {}
+    };
+
+    const shadowObserver = new MutationObserver(inspectAndHide);
+    shadowObserver.observe(shadowRoot, { childList: true, subtree: true });
+    setTimeout(inspectAndHide, 0);
+
+    return shadowRoot;
+  };
+
+  Function.prototype.toString = function () {
+    if (this === Element.prototype.attachShadow) return nativeToString.call(originalAttachShadow);
+    return nativeToString.apply(this, arguments);
+  };
+
+  function scanAndHide() {
+    const elements = document.querySelectorAll('div, template[shadowrootmode]');
+    elements.forEach(el => {
+      if (isAABHost(el)) hideElement(el);
+      if (el.tagName === 'TEMPLATE' && el.innerHTML.includes('antiadblockcore')) {
+        hideElement(el.parentElement || el);
+      }
+    });
+    unlockScroll();
+  }
+
+  function handleFallbackPage() {
+    const hqInput = document.querySelector('form input[name="hq"]');
+    if (hqInput && document.body.textContent.includes('Ad blocker or auto-click script detected')) {
+      const btn = hqInput.closest('form').querySelector('button[type="submit"]');
+      if (btn && !btn.dataset.recovering) {
+        btn.dataset.recovering = "true";
+        setTimeout(() => btn.click(), 1000);
+      }
     }
   }
 
-  function removePopup() {
-    const selectors = [
-      '#n32dbfd7a',
-      '[data-cdf4246a7-card]',
-      '.give-freely-root',
-      '#give-freely-root-kkkbiiikppgjdiebcabomlbidfodipjg',
-      '[style*="z-index: 2147483647"]',
-      'div[style*="position: fixed"][style*="inset: 0px"]'
-    ];
-
-    selectors.forEach(selector => {
-      try {
-        document.querySelectorAll(selector).forEach(el => {
-          el.remove();
-        });
-      } catch (e) {
-      }
-    });
-
-    document.body.style.overflow = 'auto !important';
-    document.documentElement.style.overflow = 'auto !important';
-  }
-
-  function preventCreation() {
-    const originalCreate = document.createElement;
-    document.createElement = function(tagName) {
-      const element = originalCreate.call(this, tagName);
-      
-      const originalSetAttr = element.setAttribute;
-      element.setAttribute = function(name, value) {
-        if ((name === 'id' && value === 'n32dbfd7a') ||
-            (name === 'class' && value.includes('cdf4246a7'))) {
-          console.log('Prevented popup element creation');
-          return;
+  const domObserver = new MutationObserver(mutations => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (node.nodeType === 1 && isAABHost(node)) {
+          hideElement(node);
         }
-        return originalSetAttr.call(this, name, value);
-      };
-      
-      return element;
-    };
-
-    const originalInsert = Element.prototype.insertAdjacentHTML;
-    Element.prototype.insertAdjacentHTML = function(position, html) {
-      if (html.includes('cdf4246a7') || 
-          html.includes('n32dbfd7a') ||
-          html.includes('give-freely-root')) {
-        console.log('Blocked popup HTML injection');
-        return;
       }
-      return originalInsert.call(this, position, html);
-    };
+    }
+  });
 
-    const originalHTMLSetter = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML').set;
-    Object.defineProperty(Element.prototype, 'innerHTML', {
-      set: function(html) {
-        if (html.includes('cdf4246a7') || 
-            html.includes('n32dbfd7a') ||
-            html.includes('give-freely-root')) {
-          console.log('Blocked popup innerHTML injection');
-          return;
-        }
-        return originalHTMLSetter.call(this, html);
-      }
-    });
+  domObserver.observe(document.documentElement, { childList: true, subtree: true });
 
-    const originalAppend = Element.prototype.appendChild;
-    Element.prototype.appendChild = function(node) {
-      if (node.id === 'n32dbfd7a' || 
-          node.classList?.contains('cdf4246a7') ||
-          node.classList?.contains('give-freely-root')) {
-        console.log('Prevented popup appendChild');
-        return node;
-      }
-      return originalAppend.call(this, node);
-    };
-  }
+  scanAndHide();
+  document.addEventListener('DOMContentLoaded', () => {
+    scanAndHide();
+    handleFallbackPage();
+  });
+  window.addEventListener('load', scanAndHide);
 
-  function blockResources() {
-    const originalFetch = window.fetch;
-    window.fetch = function(...args) {
-      const url = String(args[0]);
-      if (url.includes('antiadblockcore') || 
-          url.includes('freelygreatestscammer') ||
-          url.includes('give-freely') ||
-          url.includes('cdf4246a7')) {
-        console.log('Blocked popup resource:', url);
-        return Promise.reject(new Error('Blocked'));
-      }
-      return originalFetch.apply(this, args);
-    };
-
-    const originalXHR = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function(...args) {
-      if (String(args[1]).includes('antiadblockcore') ||
-          String(args[1]).includes('give-freely')) {
-        console.log('Blocked popup XHR:', args[1]);
-        return;
-      }
-      return originalXHR.apply(this, args);
-    };
-  }
-
-  injectStyles();
-  removePopup();
-  preventCreation();
-  blockResources();
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      removePopup();
-      injectStyles();
-    });
-  }
-
-  const monitor = setInterval(() => {
-    removePopup();
-  }, 250);
-
-  setTimeout(() => {
-    clearInterval(monitor);
-  }, 30000);
-
-  console.log('Anti-adblock popup killer (Advanced) loaded');
+  const poller = setInterval(scanAndHide, 300);
+  setTimeout(() => clearInterval(poller), 12000);
 })();
