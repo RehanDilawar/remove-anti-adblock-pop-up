@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remove Anti-Adblock Popup - Advanced
 // @namespace    http://tampermonkey.net/
-// @version      3.0
+// @version      3.1
 // @description  Dissolves anti-adblock popups/overlays and auto-continues shortlinks with hCaptcha and Intercelestial exclusions.
 // @author       rehan dilawar
 // @license      MIT
@@ -75,6 +75,8 @@
 //
 // @exclude      *://*.hcaptcha.com/*
 // @exclude      https://*.hcaptcha.com/*
+// @exclude      *://*.intercelestial.com/*
+// @exclude      https://intercelestial.com/*
 //
 // @updateURL    https://update.greasyfork.org/scripts/592517.meta.js
 // @downloadURL  https://update.greasyfork.org/scripts/592517.user.js
