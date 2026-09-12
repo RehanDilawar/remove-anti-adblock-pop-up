@@ -1,6 +1,6 @@
 # 🛡️ Remove Anti-Adblock & Auto Continue Links
 
-[![Version](https://img.shields.io/badge/Version-3.0-blue?style=for-the-badge)](https://github.com/rehandilawar)
+[![Version](https://img.shields.io/badge/Version-3.1-blue?style=for-the-badge)](https://github.com/rehandilawar)
 [![Greasy Fork](https://img.shields.io/badge/Greasy%20Fork-Install%20Script-red?style=for-the-badge&logo=greasyfork)](https://update.greasyfork.org/scripts/592517/Remove%20Anti-Adblock%20Popup%20-%20Advanced.user.js)
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-Supported-green?style=for-the-badge&logo=tampermonkey)](https://www.tampermonkey.net/)
 [![Violentmonkey](https://img.shields.io/badge/Violentmonkey-Supported-orange?style=for-the-badge)](https://violentmonkey.github.io/)
@@ -16,7 +16,7 @@ An aggressive, lightweight, and unified userscript designed to eliminate persist
 
 > [!WARNING]
 > **Adblocker Notice & Safe-Mode for Intercelestial (`intercelestial.com`):**  
-> 1. **Auto-Bypass Excluded:** Automated clicking and bypass logic are strictly disabled on `intercelestial.com` to prevent triggering server-side anti-bot security locks. The script only dissolves anti-adblock popups/overlays on this domain.  
+> 1. **Auto-Bypass Excluded:** Automated clicking and bypass logic are strictly disabled on `intercelestial.com` to prevent triggering server-side anti-bot security locks. The script to dissolves anti-adblock popups/overlays also excluded on this domain.  
 > 2. **Extension Whitelisting Required:** Whitelist or disable your extension ad blocker (uBlock Origin, AdGuard, Brave Shields) specifically on `intercelestial.com`. Intercelestial detects blocked telemetry and returns an *"Ad blocker or auto-click script detected"* roadblock. Whitelisting permits the token handshake to succeed while this script cleans the remaining visual junk.
 
 > [!TIP]
@@ -41,7 +41,7 @@ An aggressive, lightweight, and unified userscript designed to eliminate persist
 | Platform / Category | Domains | Anti-Adblock Removal | Auto-Continue Bypass | Notes |
 | :--- | :--- | :---: | :---: | :--- |
 | **Pahe Core & Mirrors** | `pahe.ink`, `pahe.plus`, `old.pahe.plus`, `tpi.li`, `oii.la`, `linegee.net`, `spacetica.com`, etc. | ✅ Active | ✅ Active | Full automation, timer acceleration & Cloudflare link caching. |
-| **Intercelestial** | `intercelestial.com` | ✅ Active | ❌ **Excluded** | **Safe-Mode:** Removes overlays only. Auto-clicking is disabled to avoid token bans. |
+| **Intercelestial** | `intercelestial.com` | ❌ **Excluded** | ❌ **Excluded** | **Safe-Mode:** Auto-clicking is disabled to avoid token bans. |
 | **Shortlink Services** | `ouo.io`, `ouo.press`, `vexfile.com`, `cloudhostt.com`, `financeehelp.com`, etc. | ✅ Active | ✅ Active | Accelerates countdown timers and progresses steps. |
 | **File Host Gateways** | `uploadrar.com`, `filespayouts.com`, `modsfire.com`, `www.file-upload.org`, `safefileku.com`, `send.now`, `upfilesgo.com`, etc. | ✅ Active | ✅ Active | Selects free tier and triggers final download buttons. |
 | **Captcha Services** | `*.hcaptcha.com/*` | ❌ **Excluded** | ❌ **Excluded** | **Whitelisted:** Preserves verification checkboxes and challenge frames. |
