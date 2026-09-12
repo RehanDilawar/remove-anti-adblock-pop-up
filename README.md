@@ -1,64 +1,81 @@
-# 🛡️ Remove Anti-Adblock Popup - Advanced
+# 🛡️ Remove Anti-Adblock & Auto Continue Links
 
-[![Greasy Fork](https://img.shields.io/badge/Greasy%20Fork-Install%20Script-red?style=for-the-badge&logo=greasyfork)](https://greasyfork.org/en/scripts/592517-remove-anti-adblock-popup-advanced)
+[![Version](https://img.shields.io/badge/Version-3.0-blue?style=for-the-badge)](https://github.com/rehandilawar)
+[![Greasy Fork](https://img.shields.io/badge/Greasy%20Fork-Install%20Script-red?style=for-the-badge&logo=greasyfork)](https://update.greasyfork.org/scripts/592517/Remove%20Anti-Adblock%20Popup%20-%20Advanced.user.js)
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-Supported-green?style=for-the-badge&logo=tampermonkey)](https://www.tampermonkey.net/)
 [![Violentmonkey](https://img.shields.io/badge/Violentmonkey-Supported-orange?style=for-the-badge)](https://violentmonkey.github.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-An aggressive, lightweight userscript designed to bypass and completely eliminate persistent anti-adblock popups, overlays, and scrolling locks on **pahe.ink**.
+An aggressive, lightweight, and unified userscript designed to eliminate persistent anti-adblock popups, backdrop overlays, and scroll locks, while automating shortlink progression, accelerating countdown timers, and caching destination endpoints across **pahe.ink**, mirrors, and popular file hosts.
 
 ---
 
 > [!IMPORTANT]
-> **This is a Userscript, not a standalone extension or adblocker filter.**  
-> It works alongside your existing adblocker and runs specifically on:
-> - 🌐 **`pahe.ink`** (and all subdomains)
-
----
+> **Dual-Engine Architecture:**  
+> This userscript operates alongside your existing browser ad blocker (e.g., uBlock Origin, AdGuard). It performs DOM tree purification, Shadow DOM un-hooking, timer acceleration, and synthetic event dispatching that standard filter lists cannot handle.
 
 > [!WARNING]
-> **Adblocker Notice for Intercelestial (`intercelestial.com`):**  
-> Disable your extension ad blocker (e.g., uBlock Origin, AdGuard) specifically on **`intercelestial.com`**[cite: 1, 2]. Intercelestial uses server-side verification that detects blocked network requests and third-party ad blocking, resulting in an *"Ad blocker or auto-click script detected"* roadblock[cite: 1]. Whitelist the site in your ad blocker so the token handshake can complete[cite: 1].
+> **Adblocker Notice & Safe-Mode for Intercelestial (`intercelestial.com`):**  
+> 1. **Auto-Bypass Excluded:** Automated clicking and bypass logic are strictly disabled on `intercelestial.com` to prevent triggering server-side anti-bot security locks. The script only dissolves anti-adblock popups/overlays on this domain.  
+> 2. **Extension Whitelisting Required:** Whitelist or disable your extension ad blocker (uBlock Origin, AdGuard, Brave Shields) specifically on `intercelestial.com`. Intercelestial detects blocked telemetry and returns an *"Ad blocker or auto-click script detected"* roadblock. Whitelisting permits the token handshake to succeed while this script cleans the remaining visual junk.
+
+> [!TIP]
+> **Zero hCaptcha Interference:**  
+> All hCaptcha assets (`*.hcaptcha.com/*`, challenge frames, checkboxes, and container modals) are excluded from element purges and click handlers, guaranteeing that human verification prompts function normally without breakage.
 
 ---
 
 ## ✨ Features
 
-- 🛑 **Aggressive DOM Removal:** Continuously scans and removes anti-adblock overlays and root wrapper nodes.
-- 🎨 **Instant CSS Injection:** Hides popup containers before page rendering to prevent layout flashing.
-- 🔓 **Scroll Restoration:** Automatically unlocks document scrollbars locked by anti-adblock detection scripts.
-- 🚫 **Resource & Network Blocking:** Intercepts fetch/XHR requests and prevents the dynamic creation of popup elements.
+- 🛑 **Aggressive Anti-Adblock Removal:** Continuously scans top-level and Shadow DOM hierarchies to eliminate full-screen backdrops, invisible click blockers (`z-index: 2147483647`), and antiadblockcore wrappers before layout flashing occurs.
+- ⚡ **Automated Shortlink Progression:** Automatically clicks "Continue", "Get Link", and "Free Download" buttons across Pahe mirrors, OuO networks, and supported file hosts.
+- ⏱️ **Timer & Interval Acceleration:** Intercepts `setInterval`, `setTimeout`, and `Date` calls with a speed factor of `0.05` (~20x faster) to bypass countdown wait screens.
+- 🔓 **Scroll Restoration:** Forcefully restores scrollbars and static positioning to `<html>` and `<body>` whenever anti-adblock scripts try to lock the page.
+- 🛡️ **hCaptcha Shielding:** Built-in safeguards ensure interactive captcha modals and checkboxes are never hidden, deleted, or misclicked.
+- 🌐 **Cloudflare Worker Cache:** Synchronizes destination URLs to a Cloudflare Worker backend on supported gateways (`tpi.li`, `oii.la`) for instant next-time redirection.
+
+---
+
+## 🌐 Supported Domains
+
+| Platform / Category | Domains | Anti-Adblock Removal | Auto-Continue Bypass | Notes |
+| :--- | :--- | :---: | :---: | :--- |
+| **Pahe Core & Mirrors** | `pahe.ink`, `pahe.plus`, `old.pahe.plus`, `tpi.li`, `oii.la`, `linegee.net`, `spacetica.com`, etc. | ✅ Active | ✅ Active | Full automation, timer acceleration & Cloudflare link caching. |
+| **Intercelestial** | `intercelestial.com` | ✅ Active | ❌ **Excluded** | **Safe-Mode:** Removes overlays only. Auto-clicking is disabled to avoid token bans. |
+| **Shortlink Services** | `ouo.io`, `ouo.press`, `vexfile.com`, `cloudhostt.com`, `financeehelp.com`, etc. | ✅ Active | ✅ Active | Accelerates countdown timers and progresses steps. |
+| **File Host Gateways** | `uploadrar.com`, `filespayouts.com`, `modsfire.com`, `www.file-upload.org`, `safefileku.com`, `send.now`, `upfilesgo.com`, etc. | ✅ Active | ✅ Active | Selects free tier and triggers final download buttons. |
+| **Captcha Services** | `*.hcaptcha.com/*` | ❌ **Excluded** | ❌ **Excluded** | **Whitelisted:** Preserves verification checkboxes and challenge frames. |
 
 ---
 
 ## 🚀 Installation
 
 ### Step 1: Install a Userscript Manager
-Ensure you have an active userscript manager extension installed in your browser:
+Make sure you have an active userscript extension installed:
 * 🐵 **[Tampermonkey](https://www.tampermonkey.net/)** *(Recommended)*
 * 🐒 **[Violentmonkey](https://violentmonkey.github.io/)**
 
 ### Step 2: Install the Script
-Click the link below and confirm the installation in your manager:  
-👉 **[Install from Greasy Fork](https://greasyfork.org/en/scripts/592517-remove-anti-adblock-popup-advanced)**
+Install or update to version 3.0 via your manager:  
+👉 **[Install from Greasy Fork](https://update.greasyfork.org/scripts/592517/Remove%20Anti-Adblock%20Popup%20-%20Advanced.user.js)**
 
-### Step 3: Enjoy
-Navigate to **pahe.ink** with your adblocker active. Popups, background dimmers, and scroll blocks will be silenced automatically.
+### Step 3: Configure `intercelestial.com`
+Pause or whitelist your browser ad blocker (e.g., uBlock Origin) on `intercelestial.com` so its server handshake completes smoothly.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **[MIT License](LICENSE)** — feel free to copy, modify, and distribute with zero restrictions.
+This project is open source and distributed under the **[MIT License](LICENSE)**.
 
 ---
 
 ## 🛠️ Author & Support
-* Developed and maintained by [Rehan Dilawar](https://github.com/rehandilawar).
-* Found an issue or a broken selector? Open an issue on [GitHub](https://github.com/RehanDilawar/remove-anti-adblock-pop-up).
+* Developed and maintained by **[Rehan Dilawar](https://github.com/rehandilawar)**.
+* Encountered a broken selector or new anti-adblock script? Open an issue on **[GitHub](https://github.com/rehandilawar)**.
 
 ---
 
 <p align="center">
-  ⭐️ <em>If you found this script helpful, consider giving the repository a star!</em>
+  ⭐️ <em>If you found this script helpful, please consider starring the repository!</em>
 </p>
