@@ -72,7 +72,7 @@ This project is open source and distributed under the **[MIT License](LICENSE)**
 
 ## 🛠️ Author & Support
 * Developed and maintained by **[Rehan Dilawar](https://github.com/rehandilawar)**.
-* Encountered a broken selector or new anti-adblock script? Open an issue on **[GitHub](https://github.com/rehandilawar)**.
+* Encountered a broken selector or new anti-adblock script? Open an issue on **[GitHub](https://github.com/RehanDilawar/remove-anti-adblock-pop-up)**.
 
 ---
 
