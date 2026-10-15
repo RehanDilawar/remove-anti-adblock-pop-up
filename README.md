@@ -1,6 +1,6 @@
 # 🛡️ Remove Anti-Adblock & Auto Continue Links
 
-[![Version](https://img.shields.io/badge/Version-3.1-blue?style=for-the-badge)](https://github.com/rehandilawar)
+[![Version](https://img.shields.io/badge/Version-3.3-blue?style=for-the-badge)](https://github.com/rehandilawar)
 [![Greasy Fork](https://img.shields.io/badge/Greasy%20Fork-Install%20Script-red?style=for-the-badge&logo=greasyfork)](https://update.greasyfork.org/scripts/592517/Remove%20Anti-Adblock%20Popup%20-%20Advanced.user.js)
 [![Tampermonkey](https://img.shields.io/badge/Tampermonkey-Supported-green?style=for-the-badge&logo=tampermonkey)](https://www.tampermonkey.net/)
 [![Violentmonkey](https://img.shields.io/badge/Violentmonkey-Supported-orange?style=for-the-badge)](https://violentmonkey.github.io/)
