@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Remove Anti-Adblock Popup - Advanced
 // @namespace    http://tampermonkey.net/
-// @version      3.1
-// @description  Dissolves anti-adblock popups/overlays and auto-continues shortlinks with hCaptcha and Intercelestial exclusions.
-// @author       rehan dilawar
-// @license      MIT
+// @version      3.3
+// @description  Dissolves anti-adblock popups/overlays (including closed Shadow DOM on body) and auto-continues shortlinks with hCaptcha and Intercelestial exclusions.
+// @author       rehan dilawar, hdyzen
+// @license      GPL-3.0
 // @icon         https://www.google.com/s2/favicons?domain=pahe.ink
 //
 // @match        *://pahe.ink/*
@@ -72,19 +72,23 @@
 // @match        https://safefileku.com/*
 // @match        https://uploadrar.com/*
 // @match        https://send.now/*
+// @match        https://clksz.com/*
 //
 // @exclude      *://*.hcaptcha.com/*
 // @exclude      https://*.hcaptcha.com/*
 // @exclude      *://*.intercelestial.com/*
 // @exclude      https://intercelestial.com/*
 //
-// @updateURL    https://update.greasyfork.org/scripts/592517.meta.js
-// @downloadURL  https://update.greasyfork.org/scripts/592517.user.js
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
 // @connect      shortlinks.fdyzen.workers.dev
 // @run-at       document-start
+// @downloadURL  https://update.greasyfork.org/scripts/592517/Remove%20Anti-Adblock%20Popup%20-%20Advanced.user.js
+// @updateURL    https://update.greasyfork.org/scripts/592517/Remove%20Anti-Adblock%20Popup%20-%20Advanced.meta.js
 // ==/UserScript==
+// Copyright (C) 2026 hdyzen (andradeatdev). This script is free software:
+// you may copy, modify and redistribute it only under the GNU General Public
+// License v3. Source and this notice must be kept intact (GPL-3.0, §4–§5).
 
 (function () {
   'use strict';
@@ -92,19 +96,50 @@
   const w = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
   // ==========================================
-  // SHARED UTILITIES & HCAPTCHA GUARDS
+  // SHARED UTILITIES & CAPTCHA GUARDS
   // ==========================================
 
-  function isHCaptchaAsset(el) {
+  function isCaptchaAsset(el) {
     if (!el) return false;
     try {
-      if (el.tagName === 'IFRAME' && (el.src?.includes('hcaptcha.com') || el.name?.includes('hcaptcha'))) return true;
+      if (el.tagName === 'IFRAME') {
+        const src = el.src || '';
+        const name = el.name || '';
+        const id = el.id || '';
+        if (
+          src.includes('hcaptcha.com') ||
+          name.includes('hcaptcha') ||
+          src.includes('challenges.cloudflare.com') ||
+          id.includes('cf-chl-widget')
+        ) {
+          return true;
+        }
+      }
       const id = typeof el.id === 'string' ? el.id : '';
       const className = typeof el.className === 'string' ? el.className : (el.getAttribute?.('class') || '');
-      if (id.includes('hcaptcha') || className.includes('hcaptcha')) return true;
+      if (
+        id.includes('hcaptcha') ||
+        className.includes('hcaptcha') ||
+        id.includes('captchaShortlink') ||
+        id.includes('cf-chl-widget')
+      ) {
+        return true;
+      }
       if (el.hasAttribute?.('data-hcaptcha-widget-id') || el.hasAttribute?.('data-hcaptcha-response')) return true;
-      if (el.closest?.('[class*="hcaptcha"], [id*="hcaptcha"], [data-hcaptcha-widget-id], iframe[src*="hcaptcha"]')) return true;
-      if (el.querySelector?.('iframe[src*="hcaptcha"], [class*="hcaptcha"], [id*="hcaptcha"], [data-hcaptcha-widget-id]')) return true;
+      if (
+        el.closest?.(
+          '[class*="hcaptcha"], [id*="hcaptcha"], [data-hcaptcha-widget-id], iframe[src*="hcaptcha"], #captchaShortlink, iframe[src*="challenges.cloudflare.com"]'
+        )
+      ) {
+        return true;
+      }
+      if (
+        el.querySelector?.(
+          'iframe[src*="hcaptcha"], [class*="hcaptcha"], [id*="hcaptcha"], [data-hcaptcha-widget-id], iframe[src*="challenges.cloudflare.com"]'
+        )
+      ) {
+        return true;
+      }
     } catch (e) {}
     return false;
   }
@@ -113,15 +148,30 @@
   // MODULE 1: REMOVE ANTI-ADBLOCK POPUPS
   // ==========================================
 
+  const AAB_KEYWORDS = [
+    'antiadblockcore',
+    'Adblocker detected',
+    'disable your adblocker',
+    'Your network is blocking ads',
+    'blocking ad domains',
+    'How to disable your adblocker',
+  ];
+
+  function containsAABText(str) {
+    if (!str) return false;
+    const lower = str.toLowerCase();
+    return AAB_KEYWORDS.some(k => lower.includes(k.toLowerCase()));
+  }
+
   const styleEl = document.createElement('style');
   styleEl.textContent = `
     html, body {
       overflow: auto !important;
       position: static !important;
     }
-    /* Neutralize maximum z-index backdrop overlays while sparing hCaptcha modals */
-    div[style*="2147483647"]:not([class*="hcaptcha"]):not([id*="hcaptcha"]):not(:has(iframe[src*="hcaptcha"])),
-    div[style*="z-index: 2147483647"]:not([class*="hcaptcha"]):not([id*="hcaptcha"]):not(:has(iframe[src*="hcaptcha"])),
+    /* Neutralize maximum z-index backdrop overlays while sparing Captcha modals */
+    div[style*="2147483647"]:not([class*="hcaptcha"]):not([id*="hcaptcha"]):not(:has(iframe[src*="hcaptcha"])):not(:has(iframe[src*="challenges.cloudflare.com"])),
+    div[style*="z-index: 2147483647"]:not([class*="hcaptcha"]):not([id*="hcaptcha"]):not(:has(iframe[src*="hcaptcha"])):not(:has(iframe[src*="challenges.cloudflare.com"])),
     div[class*="antiadblock"]:not([class*="hcaptcha"]),
     div[id*="antiadblock"]:not([id*="hcaptcha"]),
     .give-freely-root {
@@ -135,12 +185,16 @@
   (document.head || document.documentElement).appendChild(styleEl);
 
   function unlockScroll() {
-    if (document.body) document.body.style.setProperty('overflow', 'auto', 'important');
-    if (document.documentElement) document.documentElement.style.setProperty('overflow', 'auto', 'important');
+    if (document.body && document.body.style.overflow === 'hidden') {
+      document.body.style.setProperty('overflow', 'auto', 'important');
+    }
+    if (document.documentElement && document.documentElement.style.overflow === 'hidden') {
+      document.documentElement.style.setProperty('overflow', 'auto', 'important');
+    }
   }
 
   function hideElement(el) {
-    if (!el || !el.style || isHCaptchaAsset(el)) return;
+    if (!el || !el.style || el === document.body || el === document.documentElement || isCaptchaAsset(el)) return;
     el.style.setProperty('display', 'none', 'important');
     el.style.setProperty('visibility', 'hidden', 'important');
     el.style.setProperty('pointer-events', 'none', 'important');
@@ -151,76 +205,160 @@
   }
 
   function isAABElement(el) {
-    if (!el || isHCaptchaAsset(el)) return false;
+    if (!el || el === document.body || el === document.documentElement || isCaptchaAsset(el)) return false;
     if (el.attributes) {
       for (let i = 0; i < el.attributes.length; i++) {
         const name = el.attributes[i].name;
-        if (/^data-[a-z0-9]{6,12}-(h|card|style|badge|retry|reload|tips|body|title)/i.test(name)) {
+        if (/^data-[a-z0-9]{6,12}-(h|card|style|badge|retry|reload|tips|tipsbox|body|title|brand|foot)/i.test(name)) {
           return true;
         }
       }
     }
-    if (el.style && (el.style.zIndex === '2147483647' || el.style.zIndex >= 2147483640)) {
+    if (el.style && (el.style.zIndex === '2147483647' || Number(el.style.zIndex) >= 2147483640)) {
       return true;
     }
     return false;
   }
 
   function purgeHierarchy(el) {
-    if (!el || isHCaptchaAsset(el)) return;
+    if (!el || el === document.body || el === document.documentElement || isCaptchaAsset(el)) return;
     hideElement(el);
 
     let parent = el.parentElement;
     while (parent && parent !== document.body && parent !== document.documentElement) {
-      if (isHCaptchaAsset(parent)) break;
+      if (isCaptchaAsset(parent)) break;
       hideElement(parent);
       parent = parent.parentElement;
     }
   }
 
-  const nativeToString = Function.prototype.toString;
-  const originalAttachShadow = Element.prototype.attachShadow;
+  // Neutralize inside a ShadowRoot without removing nodes (prevents watchdog respawn & preserves <slot>)
+  function neutralizeShadowRoot(shadowRoot, host) {
+    try {
+      if (isCaptchaAsset(host)) return;
+      const html = shadowRoot.innerHTML || '';
+      const hasAABAttr = shadowRoot.querySelector?.(
+        '[role="dialog"], [style*="2147483647"], a[href*="antiadblockcore"]'
+      );
 
-  Element.prototype.attachShadow = function (...args) {
-    const shadowRoot = originalAttachShadow.apply(this, args);
-    const host = this;
+      if (!containsAABText(html) && !hasAABAttr) return;
 
-    const inspectAndHide = () => {
-      try {
-        if (isHCaptchaAsset(host)) return;
-        const content = shadowRoot.innerHTML || '';
-        if (
-          content.includes('antiadblockcore') ||
-          content.includes('Adblocker detected') ||
-          content.includes('disable your adblocker') ||
-          shadowRoot.querySelector('a[href*="antiadblockcore"]')
-        ) {
-          purgeHierarchy(host);
+      // 1. Inject permanent CSS suppressor inside the ShadowRoot (leaves <slot> intact!)
+      if (!shadowRoot.querySelector('style[data-aab-neutralizer]')) {
+        const shadowStyle = document.createElement('style');
+        shadowStyle.setAttribute('data-aab-neutralizer', '1');
+        shadowStyle.textContent = `
+          div, [role="dialog"], [class], [id] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            z-index: -999999 !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
+          slot {
+            display: contents !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+          }
+        `;
+        shadowRoot.appendChild(shadowStyle);
+      }
+
+      // 2. Hide all non-slot children inside the shadow root (do NOT remove them, or watchdog re-creates them)
+      Array.from(shadowRoot.children).forEach(child => {
+        if (child.tagName !== 'SLOT' && child.tagName !== 'STYLE') {
+          child.style?.setProperty('display', 'none', 'important');
+          child.style?.setProperty('visibility', 'hidden', 'important');
+          child.style?.setProperty('pointer-events', 'none', 'important');
         }
-      } catch (e) {}
+      });
+
+      // 3. If the host is NOT body/html, also hide the host element
+      if (host && host !== document.body && host !== document.documentElement) {
+        purgeHierarchy(host);
+      }
+
+      unlockScroll();
+    } catch (e) {}
+  }
+
+  // Hook attachShadow on BOTH unsafeWindow and sandbox window
+  function hookAttachShadow(targetWin) {
+    if (!targetWin || !targetWin.Element) return;
+    const origAttach = targetWin.Element.prototype.attachShadow;
+    const nativeToStr = targetWin.Function.prototype.toString;
+
+    const wrappedAttach = function (...args) {
+      // Force open mode internally if you want inspection, or keep original & hold reference
+      const shadowRoot = origAttach.apply(this, args);
+      const host = this;
+
+      const checkShadow = () => neutralizeShadowRoot(shadowRoot, host);
+
+      const shadowObs = new MutationObserver(checkShadow);
+      shadowObs.observe(shadowRoot, { childList: true, subtree: true, attributes: true });
+
+      checkShadow();
+      setTimeout(checkShadow, 0);
+      setTimeout(checkShadow, 150);
+
+      return shadowRoot;
     };
 
-    const shadowObserver = new MutationObserver(inspectAndHide);
-    shadowObserver.observe(shadowRoot, { childList: true, subtree: true });
-    setTimeout(inspectAndHide, 0);
+    targetWin.Element.prototype.attachShadow = wrappedAttach;
+    try {
+      targetWin.Function.prototype.toString = new Proxy(nativeToStr, {
+        apply(target, thisArg, argArray) {
+          if (thisArg === wrappedAttach) return nativeToStr.call(origAttach);
+          return Reflect.apply(target, thisArg, argArray);
+        },
+      });
+    } catch (e) {}
+  }
 
-    return shadowRoot;
-  };
+  hookAttachShadow(w);
+  if (w !== window) hookAttachShadow(window);
 
-  Function.prototype.toString = function () {
-    if (this === Element.prototype.attachShadow) return nativeToString.call(originalAttachShadow);
-    return nativeToString.apply(this, arguments);
-  };
+  // Neutralize app_vars adblock flags and block ads_block.js
+  try {
+    let appVarsVal = w.app_vars;
+    Object.defineProperty(w, 'app_vars', {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return appVarsVal;
+      },
+      set(val) {
+        if (val && typeof val === 'object') {
+          val.force_disable_adblock = '0';
+          val.enable_adblock_check = '0';
+        }
+        appVarsVal = val;
+      },
+    });
+  } catch (e) {}
 
   function scanAndPurge() {
-    const elements = document.querySelectorAll('div, style, template[shadowrootmode]');
+    const elements = document.querySelectorAll('div, style, template[shadowrootmode], script[src*="ads_block"]');
     elements.forEach(el => {
-      if (isHCaptchaAsset(el)) return;
+      if (el.tagName === 'SCRIPT' && el.src?.includes('ads_block')) {
+        el.remove();
+        return;
+      }
+      if (isCaptchaAsset(el)) return;
       if (isAABElement(el)) {
         purgeHierarchy(el);
       }
-      if (el.tagName === 'TEMPLATE' && el.innerHTML.includes('antiadblockcore')) {
-        purgeHierarchy(el.parentElement || el);
+      if (el.tagName === 'TEMPLATE' && containsAABText(el.innerHTML)) {
+        const parent = el.parentElement;
+        el.remove();
+        if (parent && parent !== document.body && parent !== document.documentElement) {
+          purgeHierarchy(parent);
+        }
       }
     });
     unlockScroll();
@@ -228,27 +366,41 @@
 
   const domObserver = new MutationObserver(mutations => {
     for (const m of mutations) {
+      if (m.type === 'attributes' && (m.target === document.body || m.target === document.documentElement)) {
+        unlockScroll();
+        continue;
+      }
       for (const node of m.addedNodes) {
         if (node.nodeType === 1) {
-          if (isHCaptchaAsset(node)) continue;
+          if (node.tagName === 'SCRIPT' && node.src?.includes('ads_block')) {
+            node.type = 'javascript/blocked';
+            node.remove();
+            continue;
+          }
+          if (isCaptchaAsset(node)) continue;
           if (isAABElement(node)) {
             purgeHierarchy(node);
-          } else if (node.querySelector && node.querySelector('[data-c409df689-card], [data-*-card]')) {
-            purgeHierarchy(node);
+          } else if (node.tagName === 'TEMPLATE' && containsAABText(node.innerHTML)) {
+            node.remove();
           }
         }
       }
     }
   });
 
-  domObserver.observe(document.documentElement, { childList: true, subtree: true });
+  domObserver.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['style', 'class'],
+  });
 
   scanAndPurge();
   document.addEventListener('DOMContentLoaded', scanAndPurge);
   window.addEventListener('load', scanAndPurge);
 
   const poller = setInterval(scanAndPurge, 250);
-  setTimeout(() => clearInterval(poller), 10000);
+  setTimeout(() => clearInterval(poller), 15000);
 
   // ==========================================
   // MODULE 2: PAHE AUTO CONTINUE LINKS
@@ -271,7 +423,8 @@
 
   const TEMPLATES = {
     TPI_OII: () => {
-      justClick('#continue:not([disabled])');
+      // Only click #continue once Turnstile/Captcha is solved (or if no Turnstile exists)
+      justClick(":has([name='cf-turnstile-response'][value]:not([value=''])) #continue:not([disabled]), #continue:not([disabled]):not(:has(~ * [name='cf-turnstile-response']))");
       justClick('.get-link[href]:not(.disabled)');
     },
     HOSTING: () => {
@@ -297,6 +450,10 @@
   const DOMAINS = {
     'tpi.li': TEMPLATES.TPI_OII,
     'oii.la': TEMPLATES.TPI_OII,
+    'clksz.com': () => {
+      justClick(":has([name='cf-turnstile-response'][value]:not([value=''])) #continue:not([disabled])");
+      justClick('.get-link[href]:not(.disabled)');
+    },
     'financeehelp.com': TEMPLATES.HOSTING,
     'cloudhostt.com': TEMPLATES.HOSTING,
     'linegee.net': async () => {
@@ -342,6 +499,7 @@
 
   const HOOKS = {
     setTimeout: w.setTimeout.bind(w),
+    clearTimeout: w.clearTimeout.bind(w),
     Date: w.Date,
   };
 
@@ -369,7 +527,11 @@
   }
 
   function click(node) {
-    if (!node || isHCaptchaAsset(node)) return;
+    if (!node || isCaptchaAsset(node)) return;
+    // Strip inline ad-popup onclick before clicking (#continue has window.open('https://tryedesign.com/...'))
+    if (node.id === 'continue' && node.getAttribute('onclick')?.includes('window.open')) {
+      node.removeAttribute('onclick');
+    }
     const event = new MouseEvent('click', {
       bubbles: true,
       cancelable: true,
@@ -381,7 +543,7 @@
   async function justClick(selector, options = {}) {
     const { wait = 0 } = options;
     const node = await whenElement(selector, options);
-    if (!node || isHCaptchaAsset(node)) return;
+    if (!node || isCaptchaAsset(node)) return;
     node.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
     if (wait > 0) {
       return safeSetTimeout(() => click(node), wait);
@@ -391,13 +553,13 @@
 
   async function justScrollTo(selector, options = {}) {
     const node = await whenElement(selector, options);
-    if (!node || isHCaptchaAsset(node)) return;
+    if (!node || isCaptchaAsset(node)) return;
     node.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
   }
 
   async function justRemove(selector, options = {}) {
     const node = await whenElement(selector, options);
-    if (!node || isHCaptchaAsset(node)) return;
+    if (!node || isCaptchaAsset(node)) return;
     node.remove();
   }
 
@@ -408,7 +570,7 @@
       const check = () => {
         const nodes = document.querySelectorAll(selector);
         for (const node of nodes) {
-          if (!node || isHCaptchaAsset(node)) continue;
+          if (!node || isCaptchaAsset(node)) continue;
           if (visible && !node.offsetParent) continue;
           if (typeof text === 'string' && !node.innerText.includes(text)) continue;
           if (text instanceof RegExp && !text.test(node.innerText)) continue;
