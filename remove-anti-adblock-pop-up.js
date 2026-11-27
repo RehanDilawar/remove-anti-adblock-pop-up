@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Remove Anti-Adblock Popup - Advanced
 // @namespace    http://tampermonkey.net/
-// @version      4.1
+// @version      4.2
 // @description  Bypasses AntiAdBlock Core Shadow DOM by ghosting dimensions to fool heartbeat probes, plus auto-continues shortlinks.
 // @author       rehan dilawar, hdyzen
 // @license      GPL-3.0
@@ -79,6 +79,13 @@
 // @match        https://shrinkearn.com/*
 // @match        https://clk.sh/*
 // @match        https://shrinkbixby.com/*
+// @match        https://loanbixby.com/*
+// @match        *://*.loanbixby.com/*
+// @match        *://themezon.net/*
+// @match        *://*.themezon.net/*
+// @match        https://exeygo.com/*
+// @match        https://exe.io/*
+// @match        https://*.exe.io/*
 //
 // @exclude      *://*.hcaptcha.com/*
 // @exclude      https://*.hcaptcha.com/*
@@ -217,12 +224,68 @@
   } catch (e) {}
 
   // =====================================================================
-  // MODULE 4: THE CONTINUOUS AAB VACUUM
+  // MODULE 3.5: Generic anti-detection (bait + network probes)
+  // =====================================================================
+  try {
+    // Fake globals commonly checked by detectors
+    w.canRunAds = true;
+    w.adsbygoogle = w.adsbygoogle || { loaded: true, push() {} };
+    w.google_ad_client = w.google_ad_client || 'ca-pub-0000000000000000';
+
+    // Make bait elements look unblocked
+    const baitCSS = document.createElement('style');
+    baitCSS.id = 'aab-bait-shield';
+    baitCSS.textContent = `
+      .adsbox, .ad-banner, .ad-placement, .ad-container, .adsbygoogle,
+      .pub_300x250, .pub_728x90, .text-ad, .textAd, .text_ad, .text-ads,
+      #ad_banner, #adbox, [id^="google_ads"] {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        min-height: 2px !important;
+        min-width: 2px !important;
+      }`;
+    (document.head || document.documentElement).appendChild(baitCSS);
+
+    // Answer "OK" for common ad URL probes
+    const adUrlRe = /(doubleclick|googlesyndication|adservice\.google|pagead|adnxs|\/ads\.js|adframe)/i;
+
+    const origFetch = w.fetch;
+    if (typeof origFetch === 'function') {
+      w.fetch = function (input, init) {
+        try {
+          const url = typeof input === 'string' ? input : (input && input.url) || '';
+          if (adUrlRe.test(url)) {
+            return Promise.resolve(new w.Response('', { status: 200 }));
+          }
+        } catch (e) {}
+        return origFetch.apply(this, arguments);
+      };
+    }
+
+    const origXhrOpen = w.XMLHttpRequest.prototype.open;
+    w.XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+      try {
+        if (adUrlRe.test(String(url))) url = 'data:text/plain,ok';
+      } catch (e) {}
+      return origXhrOpen.call(this, method, url, ...rest);
+    };
+  } catch (e) {}
+
+  // =====================================================================
+  // MODULE 4: Continuous AAB & click-stealer vacuum
   // =====================================================================
   setInterval(() => {
     if (document.body && document.body.style.overflow === 'hidden') document.body.style.setProperty('overflow', 'auto', 'important');
     if (document.documentElement && document.documentElement.style.overflow === 'hidden') document.documentElement.style.setProperty('overflow', 'auto', 'important');
 
+    // Remove click-stealers
+    const adClickStealers = document.querySelectorAll('div[data-shb="1"], iframe[src*="robinggnathic"], iframe[src*="mamshirt"], iframe[src*="abscloud"], iframe[src*="havefiliate"]');
+    adClickStealers.forEach(el => {
+      if (!isCaptchaAsset(el)) el.remove();
+    });
+
+    // Sweep Anti-Adblock Shadow Roots
     trackedRoots.forEach(shadowRoot => {
       try {
         const host = shadowRoot.host;
@@ -246,6 +309,7 @@
       } catch (e) {}
     });
 
+    // Sweep rogue overlays
     const rogueOverlays = document.querySelectorAll(
       '[data-ca88aeac3-card], [data-cb638915e-card], [data-c7a920ed5-card], div[role="dialog"][aria-modal="true"]'
     );
@@ -253,6 +317,27 @@
         if (!isCaptchaAsset(el)) el.remove();
     });
   }, 50);
+
+  // =====================================================================
+  // MODULE 4.5: Hide light-DOM adblock warning texts
+  // =====================================================================
+  setInterval(() => {
+    if (!document.body) return;
+    const sigs = adblockSignatures.map(s => s.toLowerCase());
+    document.querySelectorAll('div, section, p, span, h1, h2, h3, h4, li').forEach(el => {
+      try {
+        if (el.dataset.aabChecked) return;
+        if (el.children.length > 3) return;
+        if (isCaptchaAsset(el)) return;
+        if (el.querySelector('button, a, input, iframe, form')) return;
+        const t = (el.textContent || '').toLowerCase();
+        if (t.length > 0 && t.length < 300 && sigs.some(s => t.includes(s))) {
+          el.style.setProperty('display', 'none', 'important');
+          el.dataset.aabChecked = '1';
+        }
+      } catch (e) {}
+    });
+  }, 500);
 
   // =====================================================================
   // MODULE 5: UNIVERSAL AUTO-CLICKER & REDIRECTOR
